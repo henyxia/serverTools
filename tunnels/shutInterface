@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+sub main
+{
+    my $int = shift;
+    if(!$int)
+    {
+        print "No interface specified !\n";
+        return 1;
+    }
+
+    print "Cleaning interface $int\n";
+
+    my $cmd = "ip link set $int down";
+    print "RUNNING $cmd\n";
+    `$cmd`;
+
+    return 0;
+}
+
+my $int = shift;
+exit main($int);
