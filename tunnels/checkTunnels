@@ -1,0 +1,77 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Data::Dumper;
+
+sub checkTunnels
+{
+    my $hostname = `hostname`;
+    chomp $hostname;
+    !$hostname and return {
+        type    => "CONTEXT_ISSUE",
+        value   => "Unable to resolve hostname",
+    };
+
+    my $frontendsRaw = `ls /root/data/config/`;
+    !$frontendsRaw and return {
+        type    => "CONTEXT_ISSUE",
+        value   => "Unable to get frontends",
+    };
+
+    my @frontends = split('[\n\s]', $frontendsRaw);
+    !(scalar @frontends) and return {
+        type    => "CONTEXT_ISSUE",
+        value   => "Unable to list frontends",
+    };
+
+    use listTunnels;
+    foreach my $frontend (@frontends)
+    {
+        print "* $frontend:\n";
+
+        my $config = {};
+
+        my $ret = listTunnels::listTunnels($config, $frontend);
+        $ret and print "\tUnable to get this configuration\n";
+
+        foreach my $tunnel (sort keys %{$config})
+        {
+            my $int_src = $config->{$tunnel}->{LocalInt};
+            my $int_dst = $config->{$tunnel}->{RemoteInt};
+            my $ip_src  = $config->{$tunnel}->{LocalIp};
+            my $ip_dst  = $config->{$tunnel}->{RemoteIp};
+
+            my $ping = "";
+
+            if($frontend eq $hostname)
+            {
+                $ping = `ping -I $int_src $ip_dst -i 0.1 -c5 -q 2>&1 |tail -n1`;
+                if($ping =~ m|SO_BINDTODEVICE|)
+                {
+                    $ping = 'TUNNEL CLOSED';
+                }
+                else
+                {
+                    $ping =~ s|rtt min/avg/max/mdev = ||;
+                    $ping =~ s| ms||;
+                    chomp $ping;
+                }
+            }
+
+            printf("\t%5s %6s:%-12s <~> %6s:%-12s %s\n",
+                $tunnel,
+                $int_src, $ip_src,
+                $int_dst, $ip_dst,
+                $ping,
+            );
+        }
+    }
+
+    return 0;
+}
+
+my $ret = checkTunnels();
+$ret and print Dumper $ret;
+
