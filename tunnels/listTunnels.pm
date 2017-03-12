@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+package listTunnels;
+
 use strict;
 use warnings;
 
@@ -62,9 +64,4 @@ sub listTunnels
     return 0;
 }
 
-my $config = {};
-
-my $ret = listTunnels($config);
-$ret and print Dumper $ret;
-
-print Dumper $config;
+1;
