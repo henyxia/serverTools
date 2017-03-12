@@ -3,30 +3,12 @@
 use strict;
 use warnings;
 
-sub checkParameters
-{
-    my $params      = shift;
-    my @paramList   = @_;
-
-    foreach my $param (@paramList)
-    {
-        if(!$param)
-        {
-            return {
-                type    => "MISSING PARAMETER",
-                value   => $param,
-            };
-        }
-    }
-
-    return 0;
-}
-
 sub main
 {
     my %params =  @_;
 
-    my $check = checkParameters(\%params, qw{
+    require common;
+    my $check = common::checkParameters(\%params, qw{
         server
         int_src
         int_dst
@@ -61,7 +43,7 @@ sub main
     $command .= "'ifconfig $int_dst $ip_dst ";
     $command .= "pointopoint $ip_src ";
     $command .= "netmask 255.255.255.0;";
-    $command .= "echo tun ready'"; 
+    $command .= "echo tun ready'&"; 
 
     print "RUNNING $command\n";
 
