@@ -1,0 +1,86 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+sub checkParameters
+{
+    my $params      = shift;
+    my @paramList   = @_;
+
+    foreach my $param (@paramList)
+    {
+        if(!$param)
+        {
+            return {
+                type    => "MISSING PARAMETER",
+                value   => $param,
+            };
+        }
+    }
+
+    return 0;
+}
+
+sub main
+{
+    my %params =  @_;
+
+    my $check = checkParameters(\%params, qw{
+        server
+        int_src
+        int_dst
+        ip_src
+        ip_dst
+    });
+    $check and return $check;
+
+    my $server  = $params{server};
+    my $int_src = $params{int_src};
+    my $int_dst = $params{int_dst};
+    my $ip_src  = $params{ip_src};
+    my $ip_dst  = $params{ip_dst};
+
+    my ($int_src_id) = $int_src =~ m/tun(\d+)/;
+    my ($int_dst_id) = $int_dst =~ m/tun(\d+)/;
+
+    print "$int_src:$ip_src <~> $int_dst;$ip_dst\n";
+
+    my $command = "ssh ";
+    $command .= "-o PermitLocalCommand=yes ";
+    $command .= "-o LocalCommand=\"";
+
+    $command .= "ifconfig $int_src $ip_src ";
+    $command .= "pointopoint $ip_dst ";
+    $command .= "netmask 255.255.255.0\" ";
+
+    $command .= "-o ServerAliveInterval=60 ";
+    $command .= "-w $int_src_id:$int_dst_id ";
+    $command .= "$server ";
+
+    $command .= "'ifconfig $int_dst $ip_dst ";
+    $command .= "pointopoint $ip_src ";
+    $command .= "netmask 255.255.255.0;";
+    $command .= "echo tun ready'"; 
+
+    print "RUNNING $command\n";
+
+    `$command`;
+
+    return 0;
+}
+
+my $server  = shift;
+my $int_src = shift;
+my $int_dst = shift;
+my $ip_src  = shift;
+my $ip_dst  = shift;
+
+main(
+    server  => $server,
+    int_src => $int_src,
+    int_dst => $int_dst,
+    ip_src  => $ip_src,
+    ip_dst  => $ip_dst,
+);
+
